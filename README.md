@@ -59,7 +59,32 @@ graph TD
 
 ---
 
-## 🛠 기술 스택 (Tech Stack)
+## � 데이터 모델링 전략 (Modeling Strategy)
+
+대규모 데이터(예: 재무회계 시스템의 수십만 건 전표)를 다룰 때의 핵심 전략입니다. **"모든 데이터를 TypeDB에 넣는 것이 아니라, '연결'이 중요한 데이터만 넣습니다."**
+
+### Q. 전표가 수십만 건인데 TypeDB가 무거워지지 않나요?
+**A. 걱정하지 마세요. TypeDB는 대용량 처리가 가능하지만, 효율성을 위해 아래와 같이 역할을 나눕니다.**
+
+#### 1. ✅ TypeDB에 넣어야 할 것 (Master Data & Relations)
+*   **목적:** 복잡한 그래프 탐색, 이상 징후 탐지, 관계 추적.
+*   **대상:**
+    *   **엔티티:** 거래처(Vendor), 임직원, 부서, 계정과목.
+    *   **관계:** 지분 구조, 결재 라인, 계약 관계.
+    *   **주요 트랜잭션:** 고액 거래, 신규 거래처와의 첫 거래 등 **"추적(Trace)"**이 필요한 중요 이벤트.
+
+#### 2. ❌ PostgreSQL에 남겨둘 것 (Transactional Logs)
+*   **목적:** 단순 집계(Sum, Avg), 이력 조회, 통계.
+*   **대상:**
+    *   단순 반복 전표 (예: 소액 법인카드 내역, 택시비 등).
+    *   시스템 로그, 변경 이력.
+    *   **단순 조회용** 데이터는 `external-ref`를 통해 필요할 때만 Postgres에서 원본을 가져옵니다.
+
+> **결론:** "집계(얼마야?)"가 목적이면 Postgres, "추적(어떻게 흘러갔어?)"이 목적이면 TypeDB를 사용합니다.
+
+---
+
+## �🛠 기술 스택 (Tech Stack)
 
 | 구분 | 기술 | 설명 |
 | :--- | :--- | :--- |
@@ -143,7 +168,8 @@ riemann-ontologic/
 │   │   └── agent_demo.py       # AI 에이전트 실행 데모
 │   ├── manage_ontology.py    # TypeDB 스키마 로더
 │   ├── init_postgres.py      # Postgres 테이블/벡터 초기화
-│   ├── seed_data.py          # 더미 데이터 생성 및 주입
+│   ├── seed_data.py          # 더미 데이터 생성 및 주입 (Idempotent)
+│   ├── clean_db.py           # 데이터베이스 초기화 및 데이터 삭제
 │   └── verify_data.py        # 데이터 검증 스크립트
 ├── dags/                     # Airflow DAGs (추후 구현)
 └── requirements.txt          # Python 의존성

@@ -5,7 +5,13 @@ import datetime
 import json
 from typedb.driver import TypeDB, SessionType, TransactionType
 
+import hashlib
+
 # Mock Data Generation
+def generate_deterministic_uuid(content):
+    """Generates a consistent UUID based on content string."""
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, content))
+
 def generate_embedding(dim=1536):
     """Generates a random normalized vector for dummy embedding."""
     vec = [random.random() for _ in range(dim)]
@@ -48,19 +54,27 @@ def insert_data():
         with driver.session("riemann_db", SessionType.DATA) as session:
             
             for doc in DEMO_DOCUMENTS:
-                # Generate IDs
-                external_ref_id = str(uuid.uuid4()) # ID linking both systems
-                doc_uuid = str(uuid.uuid4()) # Postgres Primary Key
+                # Generate Deterministic IDs
+                # We use the title as the unique seed for the Document ID
+                external_ref_id = generate_deterministic_uuid(doc['title']) 
+                doc_uuid = generate_deterministic_uuid(doc['title'] + "_pg_id")
+                
                 created_at = datetime.datetime.now()
                 embedding = generate_embedding()
                 
                 print(f"Processing Document: '{doc['title']}'")
 
-                # --- A. Insert into PostgreSQL (System of Record) ---
-                print(f"  -> Inserting into PostgreSQL...")
+                # --- A. Insert into PostgreSQL (Upsert / Idempotent) ---
+                print(f"  -> Inserting into PostgreSQL (Upsert)...")
                 pg_query = """
                     INSERT INTO documents_sor (id, external_ref_id, title, content, summary, created_at, embedding)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (external_ref_id) 
+                    DO UPDATE SET 
+                        title = EXCLUDED.title,
+                        content = EXCLUDED.content,
+                        summary = EXCLUDED.summary,
+                        metadata = EXCLUDED.metadata;
                 """
                 pg_cursor.execute(pg_query, (
                     doc_uuid, 
@@ -72,31 +86,64 @@ def insert_data():
                     embedding
                 ))
 
-                # --- B. Insert into TypeDB (Ontology Layer) ---
-                print(f"  -> Inserting into TypeDB...")
+                # --- B. Insert into TypeDB (Idempotent Pattern) ---
+                print(f"  -> Inserting into TypeDB (Upsert)...")
                 with session.transaction(TransactionType.WRITE) as tx:
-                    # 1. Insert or Get Person (Author)
-                    # Simple check-and-insert logic using 'insert' for simplicity in TQL
-                    # Note: In production, you might match first to avoid duplicates, but 'insert' allows variable binding.
+                    # TQL Upsert Logic:
+                    # 1. Match Author (or insert if not exists) - Simplified by just inserting and relying on logic, 
+                    # but for true idempotency we should match.
+                    # Since TypeQL 'insert' just adds, running it twice creates duplicates.
+                    # We need 'match ... insert ...' or check existence.
                     
-                    tql_insert = f"""
+                    # Pattern: Match existing person? No, just match attributes.
+                    # Ideally: match $p isa person, has email "..."; insert ... (this extends)
+                    # To "get or create":
+                    # insert $p isa person...; won't dedupe.
+                    
+                    # Robust "Get or Create" in TypeDB Python driver:
+                    # 1. Check if Person exists
+                    
+                    tql_check_person = f'match $p isa person, has email "{doc["email"]}"; get $p;'
+                    person_iterator = tx.query.get(tql_check_person)
+                    person_exists = any(True for _ in person_iterator)
+                    
+                    if not person_exists:
+                        # Create Person
+                         tx.query.insert(f'''
+                            insert $p isa person, 
+                                has name "{doc['author']}", 
+                                has email "{doc['email']}", 
+                                has identifier "{doc['email']}";
+                        ''')
+                        
+                    # 2. Check if Document exists
+                    tql_check_doc = f'match $d isa document, has external-ref "{external_ref_id}"; get $d;'
+                    doc_iterator = tx.query.get(tql_check_doc)
+                    doc_exists = any(True for _ in doc_iterator)
+                    
+                    if not doc_exists:
+                        # Create Document
+                        tx.query.insert(f'''
+                            insert $d isa document,
+                                has title "{doc['title']}",
+                                has summary "{doc['summary']}",
+                                has external-ref "{external_ref_id}",
+                                has identifier "{external_ref_id}",
+                                has created-at {created_at.strftime('%Y-%m-%dT%H:%M:%S')};
+                        ''')
+
+                    # 3. Ensure Relation Logic (Idempotent)
+                    # We match both nodes and ensure relation
+                    tql_relation = f"""
+                    match
+                        $p isa person, has email "{doc['email']}";
+                        $d isa document, has external-ref "{external_ref_id}";
+                        not {{ (author: $p, authored-document: $d) isa authorship; }};
                     insert
-                    $p isa person, 
-                        has name "{doc['author']}", 
-                        has email "{doc['email']}",
-                        has identifier "{doc['email']}";
-                    
-                    $d isa document,
-                        has title "{doc['title']}",
-                        has summary "{doc['summary']}",
-                        has external-ref "{external_ref_id}",
-                        has identifier "{external_ref_id}",
-                        has created-at {created_at.strftime('%Y-%m-%dT%H:%M:%S')};
-                    
-                    (author: $p, authored-document: $d) isa authorship;
+                        (author: $p, authored-document: $d) isa authorship;
                     """
+                    tx.query.insert(tql_relation)
                     
-                    tx.query.insert(tql_insert)
                     tx.commit()
                 print("  -> Done.")
 
