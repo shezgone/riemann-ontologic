@@ -29,13 +29,13 @@ graph TD
         LlamaIndex[LlamaIndex / Agent]
     end
 
-    Airflow -->|ETL & Embeddings| Postgres
-    Airflow -->|Entity & Relation Extraction| TypeDB
+    Airflow -->|ETL and Embeddings| Postgres
+    Airflow -->|Entity and Relation Extraction| TypeDB
     
     User -->|Question| LlamaIndex
-    LlamaIndex <-->|1. Graph Search (Context)| TypeDB
-    LlamaIndex <-->|2. Vector Search (Content)| Postgres
-    TypeDB -.->|Reference (external-ref)| Postgres
+    LlamaIndex <-->|1. Graph Search| TypeDB
+    LlamaIndex <-->|2. Vector Search| Postgres
+    TypeDB -.->|Reference RefID| Postgres
 ```
 
 이 프로젝트는 "데이터의 관계"와 "데이터의 내용"을 효율적으로 분리하여 관리합니다.
