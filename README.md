@@ -21,8 +21,8 @@ graph TD
     end
 
     subgraph "Data Storage (Hybrid)"
-        Postgres[("PostgreSQL\n(System of Record)\n\n- Raw Content\n- Vectors (pgvector)")]
-        TypeDB[("TypeDB\n(Ontology / Brain)\n\n- Entities\n- Relations\n- Logic")]
+        Postgres[("PostgreSQL<br/>(System of Record)<br/><br/>- Raw Content<br/>- Vectors (pgvector)")]
+        TypeDB[("TypeDB<br/>(Ontology / Brain)<br/><br/>- Entities<br/>- Relations<br/>- Logic")]
     end
 
     subgraph "Reasoning Layer"
