@@ -1,0 +1,27 @@
+# Core
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+
+# Database Drivers
+psycopg2-binary
+pgvector
+typedb-driver
+
+# Data Engineering & Orchestration
+apache-airflow-client
+dbt-postgres
+dbt-core
+
+# AI & Reasoning
+llama-index
+llama-index-vector-stores-postgres
+llama-index-graph-stores-typedb  # Note: Check for exact package name availability or implement custom
+openai
+langchain
+
+# Utilities
+pandas
+numpy
+httpx
