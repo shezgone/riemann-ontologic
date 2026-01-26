@@ -8,6 +8,36 @@
 
 ## 🏗 아키텍처 (Hybrid Architecture)
 
+```mermaid
+graph TD
+    subgraph "External World"
+        User[User / AI Agent]
+        Sources[External Data Sources]
+    end
+
+    subgraph "Orchestration & Ingestion"
+        Airflow[Apache Airflow]
+        Sources -->|Raw Data| Airflow
+    end
+
+    subgraph "Data Storage (Hybrid)"
+        Postgres[("PostgreSQL\n(System of Record)\n\n- Raw Content\n- Vectors (pgvector)")]
+        TypeDB[("TypeDB\n(Ontology / Brain)\n\n- Entities\n- Relations\n- Logic")]
+    end
+
+    subgraph "Reasoning Layer"
+        LlamaIndex[LlamaIndex / Agent]
+    end
+
+    Airflow -->|ETL & Embeddings| Postgres
+    Airflow -->|Entity & Relation Extraction| TypeDB
+    
+    User -->|Question| LlamaIndex
+    LlamaIndex <-->|1. Graph Search (Context)| TypeDB
+    LlamaIndex <-->|2. Vector Search (Content)| Postgres
+    TypeDB -.->|Reference (external-ref)| Postgres
+```
+
 이 프로젝트는 "데이터의 관계"와 "데이터의 내용"을 효율적으로 분리하여 관리합니다.
 
 ### 1. 🧠 The Brain: TypeDB (Ontology Layer)
