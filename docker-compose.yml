@@ -40,11 +40,12 @@ services:
 
   # 2. Ontology Engine: TypeDB
   typedb:
-    image: vaticle/typedb:latest
+    image: typedb/typedb:latest
     ports:
       - "1729:1729"
+      - "8000:8000"
     volumes:
-      - typedb-data-volume:/opt/typedb-all/server/data
+      - ./data/typedb:/var/lib/typedb/data
     restart: always
 
   # 3. Orchestration: Airflow
@@ -99,4 +100,3 @@ services:
 
 volumes:
   postgres-db-volume:
-  typedb-data-volume:

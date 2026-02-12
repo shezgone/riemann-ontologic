@@ -1,0 +1,252 @@
+## Bok-hyper 데이터 적재 PART 3: 하이퍼릴레이션 삽입
+##
+## 실행: data write 트랜잭션에서 실행
+##   반드시 PART 2 (기본 릴레이션) 적재 후 실행할 것
+##   Phase 2 → Phase 3 순서로 2단계에 걸쳐 실행
+##
+## Phase 2 포함: decision-chain (4건), dissent (4건), forecast-revision (3건),
+##               forecast-impact (1건), risk-transmission (2건)
+## Phase 3 포함: risk-reassessment (2건), cross-reference (2건)
+
+# ═══════════════════════════════════════════════════════════
+# Phase 2: 1차 하이퍼릴레이션
+# ═══════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────
+# decision-chain (4건) — 연속 금리결정 연결
+# ─────────────────────────────────────────────────────────
+
+# 2024-01-25 → 2024-04-12 (78일)
+match
+    $d1 isa policy-decision, links (source-doc: $doc1), has decision-date 2024-01-25T00:00:00;
+    $doc1 has doc-id "MPM-2024-01";
+    $d2 isa policy-decision, links (source-doc: $doc2), has decision-date 2024-04-12T00:00:00;
+    $doc2 has doc-id "MPM-2024-04";
+insert
+    (prior-decision: $d1, subsequent-decision: $d2) isa decision-chain,
+        has chain-rationale "물가 둔화 추세 지속 확인하며 동결 기조 유지.",
+        has time-gap-days 78;
+
+# 2024-04-12 → 2024-07-11 (90일)
+match
+    $d1 isa policy-decision, links (source-doc: $doc1), has decision-date 2024-04-12T00:00:00;
+    $doc1 has doc-id "MPM-2024-04";
+    $d2 isa policy-decision, links (source-doc: $doc2), has decision-date 2024-07-11T00:00:00;
+    $doc2 has doc-id "MPM-2024-07";
+insert
+    (prior-decision: $d1, subsequent-decision: $d2) isa decision-chain,
+        has chain-rationale "내수 회복 지연에도 수출 개선세 확인하며 동결 유지.",
+        has time-gap-days 90;
+
+# 2024-07-11 → 2024-10-11 (92일) — 동결→인하 전환점
+match
+    $d1 isa policy-decision, links (source-doc: $doc1), has decision-date 2024-07-11T00:00:00;
+    $doc1 has doc-id "MPM-2024-07";
+    $d2 isa policy-decision, links (source-doc: $doc2), has decision-date 2024-10-11T00:00:00;
+    $doc2 has doc-id "MPM-2024-10";
+insert
+    (prior-decision: $d1, subsequent-decision: $d2) isa decision-chain,
+        has chain-rationale "물가 목표 수렴 확인 및 경기 하방 리스크 확대로 동결에서 인하로 기조 전환.",
+        has time-gap-days 92;
+
+# 2024-10-11 → 2025-01-16 (97일)
+match
+    $d1 isa policy-decision, links (source-doc: $doc1), has decision-date 2024-10-11T00:00:00;
+    $doc1 has doc-id "MPM-2024-10";
+    $d2 isa policy-decision, links (source-doc: $doc2), has decision-date 2025-01-16T00:00:00;
+    $doc2 has doc-id "MPM-2025-01";
+insert
+    (prior-decision: $d1, subsequent-decision: $d2) isa decision-chain,
+        has chain-rationale "내수 부진 심화와 수출 둔화 전환으로 추가 인하 결정.",
+        has time-gap-days 97;
+
+
+# ─────────────────────────────────────────────────────────
+# dissent (4건) — 소수의견
+# ─────────────────────────────────────────────────────────
+
+# 박기영: 2024-07-11 25bp 인하
+match
+    $d isa policy-decision, links (source-doc: $doc), has decision-date 2024-07-11T00:00:00;
+    $doc has doc-id "MPM-2024-07";
+    $m isa committee-member, has member-name "박기영";
+insert
+    (dissenter: $m, target-decision: $d) isa dissent,
+        has dissent-opinion "25bp 인하",
+        has dissent-rationale "물가 안정 충분히 확인. 내수 부진 감안 시 선제적 인하 필요.";
+
+# 서영경: 2024-10-11 동결
+match
+    $d isa policy-decision, links (source-doc: $doc), has decision-date 2024-10-11T00:00:00;
+    $doc has doc-id "MPM-2024-10";
+    $m isa committee-member, has member-name "서영경";
+insert
+    (dissenter: $m, target-decision: $d) isa dissent,
+        has dissent-opinion "동결",
+        has dissent-rationale "가계부채 증가 리스크 감안 시 동결 유지가 적절.";
+
+# 서영경: 2025-01-16 동결
+match
+    $d isa policy-decision, links (source-doc: $doc), has decision-date 2025-01-16T00:00:00;
+    $doc has doc-id "MPM-2025-01";
+    $m isa committee-member, has member-name "서영경";
+insert
+    (dissenter: $m, target-decision: $d) isa dissent,
+        has dissent-opinion "동결",
+        has dissent-rationale "추가 인하 시 가계부채 위험 재확대 우려.";
+
+# 정규일: 2025-01-16 50bp 인하
+match
+    $d isa policy-decision, links (source-doc: $doc), has decision-date 2025-01-16T00:00:00;
+    $doc has doc-id "MPM-2025-01";
+    $m isa committee-member, has member-name "정규일";
+insert
+    (dissenter: $m, target-decision: $d) isa dissent,
+        has dissent-opinion "50bp 인하",
+        has dissent-rationale "경기 하방 리스크가 심각하여 과감한 인하가 필요.";
+
+
+# ─────────────────────────────────────────────────────────
+# forecast-revision (3건) — 전망 수정
+# ─────────────────────────────────────────────────────────
+
+# GDP 2.1% → 2.4% 상향 (반도체 수출 호조)
+match
+    $f1 isa forecast, links (source-doc: $doc1, target-indicator: $ind1);
+    $doc1 has doc-id "EOR-2024-H1";
+    $ind1 has indicator-name "GDP성장률";
+    $f2 isa forecast, links (source-doc: $doc2, target-indicator: $ind2);
+    $doc2 has doc-id "EOR-2024-H2";
+    $ind2 has indicator-name "GDP성장률";
+insert
+    (original-forecast: $f1, revised-forecast: $f2) isa forecast-revision,
+        has revision-direction "상향",
+        has revision-magnitude 0.3,
+        has revision-reason "반도체 수출 호조";
+
+# GDP 2.4% → 1.8% 하향 (글로벌 무역 둔화)
+match
+    $f1 isa forecast, links (source-doc: $doc1, target-indicator: $ind1);
+    $doc1 has doc-id "EOR-2024-H2";
+    $ind1 has indicator-name "GDP성장률";
+    $f2 isa forecast, links (source-doc: $doc2, target-indicator: $ind2);
+    $doc2 has doc-id "EOR-2025-H1";
+    $ind2 has indicator-name "GDP성장률";
+insert
+    (original-forecast: $f1, revised-forecast: $f2) isa forecast-revision,
+        has revision-direction "하향",
+        has revision-magnitude 0.6,
+        has revision-reason "글로벌 무역 둔화, 미중 관세";
+
+# CPI 2.6% → 2.3% 하향 (국제유가 안정)
+match
+    $f1 isa forecast, links (source-doc: $doc1, target-indicator: $ind1);
+    $doc1 has doc-id "EOR-2024-H1";
+    $ind1 has indicator-name "소비자물가상승률";
+    $f2 isa forecast, links (source-doc: $doc2, target-indicator: $ind2);
+    $doc2 has doc-id "EOR-2024-H2";
+    $ind2 has indicator-name "소비자물가상승률";
+insert
+    (original-forecast: $f1, revised-forecast: $f2) isa forecast-revision,
+        has revision-direction "하향",
+        has revision-magnitude 0.3,
+        has revision-reason "국제유가 안정 및 농산물 가격 하락";
+
+
+# ─────────────────────────────────────────────────────────
+# forecast-impact (1건) — 결정이 전망에 미치는 영향
+# ─────────────────────────────────────────────────────────
+
+# 10월 인하 → 2025-H1 GDP 전망
+match
+    $d isa policy-decision, links (source-doc: $ddoc);
+    $ddoc has doc-id "MPM-2024-10";
+    $f isa forecast, links (source-doc: $fdoc, target-indicator: $ind);
+    $fdoc has doc-id "EOR-2025-H1";
+    $ind has indicator-name "GDP성장률";
+insert
+    (triggering-decision: $d, affected-forecast: $f) isa forecast-impact,
+        has impact-description "대외 불확실성이 통화정책 효과를 상쇄하여 성장률 전망이 추가 하락.",
+        has impact-lag-months 4;
+
+
+# ─────────────────────────────────────────────────────────
+# risk-transmission (2건) — 리스크 전이 경로
+# ─────────────────────────────────────────────────────────
+
+# 가계부채 → 부동산시장과열
+match
+    $r1 isa risk-factor, has risk-name "가계부채";
+    $r2 isa risk-factor, has risk-name "부동산시장과열";
+insert
+    (from-risk: $r1, to-risk: $r2) isa risk-transmission,
+        has transmission-mechanism "가계대출확대→주택구매자금유입→부동산가격상승",
+        has observed-date 2024-11-15T00:00:00;
+
+# 부동산시장과열 → 기업신용리스크
+match
+    $r1 isa risk-factor, has risk-name "부동산시장과열";
+    $r2 isa risk-factor, has risk-name "기업신용리스크";
+insert
+    (from-risk: $r1, to-risk: $r2) isa risk-transmission,
+        has transmission-mechanism "부동산PF부실→건설사유동성위기→비은행연쇄부실",
+        has observed-date 2024-12-10T00:00:00;
+
+
+# ═══════════════════════════════════════════════════════════
+# Phase 3: 2차 하이퍼릴레이션
+#   (Phase 2의 릴레이션이 적재된 후에 실행해야 함)
+# ═══════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────
+# risk-reassessment (2건) — 리스크 재평가
+# ─────────────────────────────────────────────────────────
+
+# 가계부채: 보통 → 높음
+match
+    $a1 isa risk-assessment, links (source-doc: $doc1, risk-subject: $rf1);
+    $doc1 has doc-id "FSR-2024-06";
+    $rf1 has risk-name "가계부채";
+    $a2 isa risk-assessment, links (source-doc: $doc2, risk-subject: $rf2);
+    $doc2 has doc-id "FSR-2024-12";
+    $rf2 has risk-name "가계부채";
+insert
+    (prior-assessment: $a1, updated-assessment: $a2) isa risk-reassessment,
+        has severity-change "상향",
+        has reassessment-reason "기준금리 인하 이후 가계대출 재확대";
+
+# 부동산시장과열: 낮음 → 높음
+match
+    $a1 isa risk-assessment, links (source-doc: $doc1, risk-subject: $rf1);
+    $doc1 has doc-id "FSR-2024-06";
+    $rf1 has risk-name "부동산시장과열";
+    $a2 isa risk-assessment, links (source-doc: $doc2, risk-subject: $rf2);
+    $doc2 has doc-id "FSR-2024-12";
+    $rf2 has risk-name "부동산시장과열";
+insert
+    (prior-assessment: $a1, updated-assessment: $a2) isa risk-reassessment,
+        has severity-change "상향",
+        has reassessment-reason "금리 인하 기대감으로 서울 주택가격 반등";
+
+
+# ─────────────────────────────────────────────────────────
+# cross-reference (2건) — 문서 간 상호참조
+# ─────────────────────────────────────────────────────────
+
+# FSR-2024-12 → MPM-2024-10 (10월 인하 이후 가계대출 증가세 분석)
+match
+    $doc1 isa financial-stability-report, has doc-id "FSR-2024-12";
+    $doc2 isa monetary-policy-minutes, has doc-id "MPM-2024-10";
+    $d isa policy-decision, links (source-doc: $doc2), has decision-type "인하";
+insert
+    (referring-doc: $doc1, referred-doc: $doc2, referenced-decision: $d) isa cross-reference,
+        has reference-context "10월 인하 이후 가계대출 증가세 분석";
+
+# MPM-2024-10 → EOR-2024-H2 (8월 전망 참조하여 인하 근거로 활용)
+match
+    $doc1 isa monetary-policy-minutes, has doc-id "MPM-2024-10";
+    $doc2 isa economic-outlook-report, has doc-id "EOR-2024-H2";
+    $d isa policy-decision, links (source-doc: $doc1), has decision-type "인하";
+insert
+    (referring-doc: $doc1, referred-doc: $doc2, referenced-decision: $d) isa cross-reference,
+        has reference-context "8월 전망보고서 수출 전망에도 내수 부진이 깊어 인하 근거로 활용";

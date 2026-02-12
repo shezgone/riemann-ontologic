@@ -1,0 +1,217 @@
+## Bok-hyper 스키마 정의 (TypeDB 3.x 호환)
+##
+## 실행: schema write 트랜잭션에서 실행
+##   typedb console --command="transaction Bok-hyper schema write" < bok_schema.tql
+##
+## 구조:
+##   - 엔티티: document(abstract) → monetary-policy-minutes, economic-outlook-report, financial-stability-report
+##             indicator, committee-member, risk-factor
+##   - 릴레이션(기본): policy-decision, forecast, risk-assessment
+##   - 릴레이션(하이퍼): decision-chain, dissent, forecast-revision, forecast-impact,
+##                       risk-reassessment, risk-transmission, cross-reference
+
+define
+
+# ─────────────────────────────────────────────────────────
+# Attributes
+# ─────────────────────────────────────────────────────────
+
+# Document 관련
+attribute doc-id value string;
+attribute title value string;
+attribute publish-date value datetime;
+attribute summary value string;
+
+# Indicator 관련
+attribute indicator-name value string;
+attribute indicator-category value string;
+
+# Committee Member 관련
+attribute member-name value string;
+attribute role-name value string;
+
+# Risk Factor 관련
+attribute risk-name value string;
+attribute risk-category value string;
+
+# Policy Decision 관련
+attribute decision-date value datetime;
+attribute decision-type value string;
+attribute decision-value value double;
+attribute rationale value string;
+
+# Forecast 관련
+attribute forecast-date value datetime;
+attribute forecast-period value string;
+attribute forecast-value value double;
+attribute confidence-level value string;
+
+# Risk Assessment 관련
+attribute assessment-date value datetime;
+attribute severity value string;
+attribute assessment-text value string;
+
+# Decision Chain 관련
+attribute chain-rationale value string;
+attribute time-gap-days value integer;
+
+# Forecast Revision 관련
+attribute revision-direction value string;
+attribute revision-magnitude value double;
+attribute revision-reason value string;
+
+# Forecast Impact 관련
+attribute impact-description value string;
+attribute impact-lag-months value integer;
+
+# Dissent 관련
+attribute dissent-opinion value string;
+attribute dissent-rationale value string;
+
+# Risk Reassessment 관련
+attribute severity-change value string;
+attribute reassessment-reason value string;
+
+# Risk Transmission 관련
+attribute transmission-mechanism value string;
+attribute observed-date value datetime;
+
+# Cross Reference 관련
+attribute reference-context value string;
+
+
+# ─────────────────────────────────────────────────────────
+# Entities
+# ─────────────────────────────────────────────────────────
+
+entity document @abstract,
+    owns doc-id @key,
+    owns title,
+    owns publish-date,
+    owns summary,
+    plays policy-decision:source-doc,
+    plays forecast:source-doc,
+    plays risk-assessment:source-doc,
+    plays cross-reference:referring-doc,
+    plays cross-reference:referred-doc;
+
+entity monetary-policy-minutes sub document;
+
+entity economic-outlook-report sub document;
+
+entity financial-stability-report sub document;
+
+entity indicator,
+    owns indicator-name @key,
+    owns indicator-category,
+    plays policy-decision:target-indicator,
+    plays forecast:target-indicator,
+    plays risk-assessment:related-indicator;
+
+entity committee-member,
+    owns member-name @key,
+    owns role-name,
+    plays policy-decision:decision-maker,
+    plays dissent:dissenter;
+
+entity risk-factor,
+    owns risk-name @key,
+    owns risk-category,
+    plays risk-assessment:risk-subject,
+    plays risk-transmission:from-risk,
+    plays risk-transmission:to-risk;
+
+
+# ─────────────────────────────────────────────────────────
+# Relations — 기본 (엔티티 간)
+# ─────────────────────────────────────────────────────────
+
+relation policy-decision,
+    relates source-doc,
+    relates target-indicator,
+    relates decision-maker,
+    owns decision-date,
+    owns decision-type,
+    owns decision-value,
+    owns rationale,
+    plays decision-chain:prior-decision,
+    plays decision-chain:subsequent-decision,
+    plays dissent:target-decision,
+    plays forecast-impact:triggering-decision,
+    plays cross-reference:referenced-decision;
+
+relation forecast,
+    relates source-doc,
+    relates target-indicator,
+    owns forecast-date,
+    owns forecast-period,
+    owns forecast-value,
+    owns confidence-level,
+    plays forecast-revision:original-forecast,
+    plays forecast-revision:revised-forecast,
+    plays forecast-impact:affected-forecast;
+
+relation risk-assessment,
+    relates source-doc,
+    relates risk-subject,
+    relates related-indicator,
+    owns assessment-date,
+    owns severity,
+    owns assessment-text,
+    plays risk-reassessment:prior-assessment,
+    plays risk-reassessment:updated-assessment;
+
+
+# ─────────────────────────────────────────────────────────
+# Relations — 하이퍼릴레이션 (릴레이션 간)
+# ─────────────────────────────────────────────────────────
+
+## 결정 체인: policy-decision → policy-decision
+relation decision-chain,
+    relates prior-decision,
+    relates subsequent-decision,
+    owns chain-rationale,
+    owns time-gap-days;
+
+## 소수의견: committee-member × policy-decision
+relation dissent,
+    relates dissenter,
+    relates target-decision,
+    owns dissent-opinion,
+    owns dissent-rationale;
+
+## 전망 수정: forecast → forecast
+relation forecast-revision,
+    relates original-forecast,
+    relates revised-forecast,
+    owns revision-direction,
+    owns revision-magnitude,
+    owns revision-reason;
+
+## 정책→전망 영향: policy-decision → forecast
+relation forecast-impact,
+    relates triggering-decision,
+    relates affected-forecast,
+    owns impact-description,
+    owns impact-lag-months;
+
+## 리스크 등급 변화: risk-assessment → risk-assessment
+relation risk-reassessment,
+    relates prior-assessment,
+    relates updated-assessment,
+    owns severity-change,
+    owns reassessment-reason;
+
+## 리스크 전이: risk-factor → risk-factor
+relation risk-transmission,
+    relates from-risk,
+    relates to-risk,
+    owns transmission-mechanism,
+    owns observed-date;
+
+## 문서 교차참조: document × document × policy-decision (3항 관계)
+relation cross-reference,
+    relates referring-doc,
+    relates referred-doc,
+    relates referenced-decision,
+    owns reference-context;

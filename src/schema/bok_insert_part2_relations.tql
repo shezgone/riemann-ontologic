@@ -1,0 +1,201 @@
+## Bok-hyper 데이터 적재 PART 2: 기본 릴레이션 삽입
+##
+## 실행: data write 트랜잭션에서 실행
+##   반드시 PART 1 (엔티티) 적재 후 실행할 것
+##
+## 포함: policy-decision (5건), forecast (6건), risk-assessment (5건)
+
+# ─────────────────────────────────────────────────────────
+# policy-decision (5건) — 기준금리 결정
+# ─────────────────────────────────────────────────────────
+
+# 2024-01-25 동결 3.50%
+match
+    $doc isa monetary-policy-minutes, has doc-id "MPM-2024-01";
+    $ind isa indicator, has indicator-name "기준금리";
+    $m isa committee-member, has member-name "이창용";
+insert
+    (source-doc: $doc, target-indicator: $ind, decision-maker: $m) isa policy-decision,
+        has decision-date 2024-01-25T00:00:00,
+        has decision-type "동결",
+        has decision-value 3.5,
+        has rationale "물가 둔화 추세 확인되나, 상방 불확실성 상존. 추가 관찰 필요.";
+
+# 2024-04-12 동결 3.50%
+match
+    $doc isa monetary-policy-minutes, has doc-id "MPM-2024-04";
+    $ind isa indicator, has indicator-name "기준금리";
+    $m isa committee-member, has member-name "이창용";
+insert
+    (source-doc: $doc, target-indicator: $ind, decision-maker: $m) isa policy-decision,
+        has decision-date 2024-04-12T00:00:00,
+        has decision-type "동결",
+        has decision-value 3.5,
+        has rationale "내수 회복 지연되었으나, 수출 개선세 확인. 동결 유지 적절.";
+
+# 2024-07-11 동결 3.50%
+match
+    $doc isa monetary-policy-minutes, has doc-id "MPM-2024-07";
+    $ind isa indicator, has indicator-name "기준금리";
+    $m isa committee-member, has member-name "이창용";
+insert
+    (source-doc: $doc, target-indicator: $ind, decision-maker: $m) isa policy-decision,
+        has decision-date 2024-07-11T00:00:00,
+        has decision-type "동결",
+        has decision-value 3.5,
+        has rationale "물가 안정 확인되나 가계부채 증가세 우려. 동결 유지.";
+
+# 2024-10-11 인하 3.25%
+match
+    $doc isa monetary-policy-minutes, has doc-id "MPM-2024-10";
+    $ind isa indicator, has indicator-name "기준금리";
+    $m isa committee-member, has member-name "이창용";
+insert
+    (source-doc: $doc, target-indicator: $ind, decision-maker: $m) isa policy-decision,
+        has decision-date 2024-10-11T00:00:00,
+        has decision-type "인하",
+        has decision-value 3.25,
+        has rationale "물가 목표 수렴 확인, 경기 하방 리스크 확대로 25bp 인하 결정.";
+
+# 2025-01-16 인하 3.00%
+match
+    $doc isa monetary-policy-minutes, has doc-id "MPM-2025-01";
+    $ind isa indicator, has indicator-name "기준금리";
+    $m isa committee-member, has member-name "이창용";
+insert
+    (source-doc: $doc, target-indicator: $ind, decision-maker: $m) isa policy-decision,
+        has decision-date 2025-01-16T00:00:00,
+        has decision-type "인하",
+        has decision-value 3.0,
+        has rationale "내수 부진 심화, 수출 둔화 전환으로 추가 25bp 인하 결정.";
+
+
+# ─────────────────────────────────────────────────────────
+# forecast (6건) — 경제전망
+# ─────────────────────────────────────────────────────────
+
+# EOR-2024-H1: GDP 2.1%
+match
+    $doc isa economic-outlook-report, has doc-id "EOR-2024-H1";
+    $ind isa indicator, has indicator-name "GDP성장률";
+insert
+    (source-doc: $doc, target-indicator: $ind) isa forecast,
+        has forecast-date 2024-02-15T00:00:00,
+        has forecast-period "2024",
+        has forecast-value 2.1,
+        has confidence-level "보통";
+
+# EOR-2024-H1: 소비자물가 2.6%
+match
+    $doc isa economic-outlook-report, has doc-id "EOR-2024-H1";
+    $ind isa indicator, has indicator-name "소비자물가상승률";
+insert
+    (source-doc: $doc, target-indicator: $ind) isa forecast,
+        has forecast-date 2024-02-15T00:00:00,
+        has forecast-period "2024",
+        has forecast-value 2.6,
+        has confidence-level "보통";
+
+# EOR-2024-H2: GDP 2.4%
+match
+    $doc isa economic-outlook-report, has doc-id "EOR-2024-H2";
+    $ind isa indicator, has indicator-name "GDP성장률";
+insert
+    (source-doc: $doc, target-indicator: $ind) isa forecast,
+        has forecast-date 2024-08-20T00:00:00,
+        has forecast-period "2024",
+        has forecast-value 2.4,
+        has confidence-level "높음";
+
+# EOR-2024-H2: 소비자물가 2.3%
+match
+    $doc isa economic-outlook-report, has doc-id "EOR-2024-H2";
+    $ind isa indicator, has indicator-name "소비자물가상승률";
+insert
+    (source-doc: $doc, target-indicator: $ind) isa forecast,
+        has forecast-date 2024-08-20T00:00:00,
+        has forecast-period "2024",
+        has forecast-value 2.3,
+        has confidence-level "높음";
+
+# EOR-2025-H1: GDP 1.8%
+match
+    $doc isa economic-outlook-report, has doc-id "EOR-2025-H1";
+    $ind isa indicator, has indicator-name "GDP성장률";
+insert
+    (source-doc: $doc, target-indicator: $ind) isa forecast,
+        has forecast-date 2025-02-18T00:00:00,
+        has forecast-period "2025",
+        has forecast-value 1.8,
+        has confidence-level "낮음";
+
+# EOR-2025-H1: 소비자물가 2.0%
+match
+    $doc isa economic-outlook-report, has doc-id "EOR-2025-H1";
+    $ind isa indicator, has indicator-name "소비자물가상승률";
+insert
+    (source-doc: $doc, target-indicator: $ind) isa forecast,
+        has forecast-date 2025-02-18T00:00:00,
+        has forecast-period "2025",
+        has forecast-value 2.0,
+        has confidence-level "높음";
+
+
+# ─────────────────────────────────────────────────────────
+# risk-assessment (5건) — 리스크 평가
+# ─────────────────────────────────────────────────────────
+
+# FSR-2024-06: 가계부채 (보통)
+match
+    $doc isa financial-stability-report, has doc-id "FSR-2024-06";
+    $rf isa risk-factor, has risk-name "가계부채";
+    $ind isa indicator, has indicator-name "가계신용증가율";
+insert
+    (source-doc: $doc, risk-subject: $rf, related-indicator: $ind) isa risk-assessment,
+        has assessment-date 2024-06-20T00:00:00,
+        has severity "보통",
+        has assessment-text "가계부채 증가세 둔화되었으나 절대 수준 여전히 높음. 모니터링 지속 필요.";
+
+# FSR-2024-06: 부동산시장과열 (낮음)
+match
+    $doc isa financial-stability-report, has doc-id "FSR-2024-06";
+    $rf isa risk-factor, has risk-name "부동산시장과열";
+    $ind isa indicator, has indicator-name "가계신용증가율";
+insert
+    (source-doc: $doc, risk-subject: $rf, related-indicator: $ind) isa risk-assessment,
+        has assessment-date 2024-06-20T00:00:00,
+        has severity "낮음",
+        has assessment-text "부동산 시장 안정세 유지. 거래량 감소 추세.";
+
+# FSR-2024-12: 가계부채 (높음)
+match
+    $doc isa financial-stability-report, has doc-id "FSR-2024-12";
+    $rf isa risk-factor, has risk-name "가계부채";
+    $ind isa indicator, has indicator-name "가계신용증가율";
+insert
+    (source-doc: $doc, risk-subject: $rf, related-indicator: $ind) isa risk-assessment,
+        has assessment-date 2024-12-19T00:00:00,
+        has severity "높음",
+        has assessment-text "기준금리 인하 이후 가계대출 재확대. 주택담보대출 중심 증가.";
+
+# FSR-2024-12: 부동산시장과열 (높음)
+match
+    $doc isa financial-stability-report, has doc-id "FSR-2024-12";
+    $rf isa risk-factor, has risk-name "부동산시장과열";
+    $ind isa indicator, has indicator-name "가계신용증가율";
+insert
+    (source-doc: $doc, risk-subject: $rf, related-indicator: $ind) isa risk-assessment,
+        has assessment-date 2024-12-19T00:00:00,
+        has severity "높음",
+        has assessment-text "금리 인하 기대감으로 서울 주택가격 반등. 투기적 수요 증가 우려.";
+
+# FSR-2024-12: 기업신용리스크 (보통)
+match
+    $doc isa financial-stability-report, has doc-id "FSR-2024-12";
+    $rf isa risk-factor, has risk-name "기업신용리스크";
+    $ind isa indicator, has indicator-name "경상수지";
+insert
+    (source-doc: $doc, risk-subject: $rf, related-indicator: $ind) isa risk-assessment,
+        has assessment-date 2024-12-19T00:00:00,
+        has severity "보통",
+        has assessment-text "일부 한계기업 신용위험 확대되었으나 전반적으로 관리 가능 수준.";

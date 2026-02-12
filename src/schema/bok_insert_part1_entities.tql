@@ -1,0 +1,158 @@
+## Bok-hyper 데이터 적재 PART 1: 엔티티 (Entity) 삽입
+##
+## 실행: data write 트랜잭션에서 실행
+##   반드시 bok_schema.tql 적용 후 실행할 것
+##
+## 순서: PART 1 (엔티티) → PART 2 (기본 릴레이션) → PART 3 (하이퍼릴레이션)
+
+# ─────────────────────────────────────────────────────────
+# 금융통화위원회 의사록 (monetary-policy-minutes)
+# ─────────────────────────────────────────────────────────
+
+insert $doc isa monetary-policy-minutes,
+    has doc-id "MPM-2024-01",
+    has title "2024년 1월 금융통화위원회 의사록",
+    has publish-date 2024-01-25T00:00:00,
+    has summary "기준금리 3.50% 동결 결정. 물가 둔화 추세 확인, 그러나 불확실성 상존.";
+
+insert $doc isa monetary-policy-minutes,
+    has doc-id "MPM-2024-04",
+    has title "2024년 4월 금융통화위원회 의사록",
+    has publish-date 2024-04-12T00:00:00,
+    has summary "기준금리 3.50% 동결 유지. 내수 회복 지연, 수출 개선세 확인.";
+
+insert $doc isa monetary-policy-minutes,
+    has doc-id "MPM-2024-07",
+    has title "2024년 7월 금융통화위원회 의사록",
+    has publish-date 2024-07-11T00:00:00,
+    has summary "기준금리 3.50% 동결. 물가 안정 확인되나 가계부채 증가세 우려.";
+
+insert $doc isa monetary-policy-minutes,
+    has doc-id "MPM-2024-10",
+    has title "2024년 10월 금융통화위원회 의사록",
+    has publish-date 2024-10-11T00:00:00,
+    has summary "기준금리 3.25%로 25bp 인하. 물가 목표 수렴, 경기 하방 리스크 확대.";
+
+insert $doc isa monetary-policy-minutes,
+    has doc-id "MPM-2025-01",
+    has title "2025년 1월 금융통화위원회 의사록",
+    has publish-date 2025-01-16T00:00:00,
+    has summary "기준금리 3.00%로 추가 25bp 인하. 내수 부진 심화, 수출 둔화 전환.";
+
+# ─────────────────────────────────────────────────────────
+# 경제전망보고서 (economic-outlook-report)
+# ─────────────────────────────────────────────────────────
+
+insert $doc isa economic-outlook-report,
+    has doc-id "EOR-2024-H1",
+    has title "2024년 상반기 경제전망보고서",
+    has publish-date 2024-02-15T00:00:00,
+    has summary "2024년 GDP 성장률 2.1% 전망. 물가 상승률 2.6% 전망.";
+
+insert $doc isa economic-outlook-report,
+    has doc-id "EOR-2024-H2",
+    has title "2024년 하반기 경제전망보고서",
+    has publish-date 2024-08-20T00:00:00,
+    has summary "2024년 GDP 성장률 2.4%로 상향. 수출 호조 반영. 물가 2.3%로 하향.";
+
+insert $doc isa economic-outlook-report,
+    has doc-id "EOR-2025-H1",
+    has title "2025년 상반기 경제전망보고서",
+    has publish-date 2025-02-18T00:00:00,
+    has summary "2025년 GDP 성장률 1.8% 전망. 글로벌 무역 둔화 반영. 물가 2.0%.";
+
+# ─────────────────────────────────────────────────────────
+# 금융안정보고서 (financial-stability-report)
+# ─────────────────────────────────────────────────────────
+
+insert $doc isa financial-stability-report,
+    has doc-id "FSR-2024-06",
+    has title "2024년 6월 금융안정보고서",
+    has publish-date 2024-06-20T00:00:00,
+    has summary "가계부채 증가세 둔화되었으나 수준 여전히 높음. 부동산 리스크 보통.";
+
+insert $doc isa financial-stability-report,
+    has doc-id "FSR-2024-12",
+    has title "2024년 12월 금융안정보고서",
+    has publish-date 2024-12-19T00:00:00,
+    has summary "가계부채 리스크 상향. 부동산 가격 재상승, 기업신용리스크 확대.";
+
+# ─────────────────────────────────────────────────────────
+# 지표 (indicator)
+# ─────────────────────────────────────────────────────────
+
+insert $ind isa indicator,
+    has indicator-name "기준금리",
+    has indicator-category "금리";
+
+insert $ind isa indicator,
+    has indicator-name "GDP성장률",
+    has indicator-category "성장";
+
+insert $ind isa indicator,
+    has indicator-name "소비자물가상승률",
+    has indicator-category "물가";
+
+insert $ind isa indicator,
+    has indicator-name "실업률",
+    has indicator-category "고용";
+
+insert $ind isa indicator,
+    has indicator-name "경상수지",
+    has indicator-category "대외";
+
+insert $ind isa indicator,
+    has indicator-name "가계신용증가율",
+    has indicator-category "금융안정";
+
+# ─────────────────────────────────────────────────────────
+# 금통위원 (committee-member)
+# ─────────────────────────────────────────────────────────
+
+insert $m isa committee-member,
+    has member-name "이창용",
+    has role-name "총재";
+
+insert $m isa committee-member,
+    has member-name "류근관",
+    has role-name "부총재";
+
+insert $m isa committee-member,
+    has member-name "박기영",
+    has role-name "금통위원";
+
+insert $m isa committee-member,
+    has member-name "서영경",
+    has role-name "금통위원";
+
+insert $m isa committee-member,
+    has member-name "이수형",
+    has role-name "금통위원";
+
+insert $m isa committee-member,
+    has member-name "정규일",
+    has role-name "금통위원";
+
+# ─────────────────────────────────────────────────────────
+# 리스크 요인 (risk-factor)
+# ─────────────────────────────────────────────────────────
+
+insert $rf isa risk-factor,
+    has risk-name "가계부채",
+    has risk-category "가계";
+
+insert $rf isa risk-factor,
+    has risk-name "부동산시장과열",
+    has risk-category "자산시장";
+
+insert $rf isa risk-factor,
+    has risk-name "환율변동성",
+    has risk-category "대외";
+
+insert $rf isa risk-factor,
+    has risk-name "기업신용리스크",
+    has risk-category "기업";
+
+insert $rf isa risk-factor,
+    has risk-name "글로벌금융긴축",
+    has risk-category "대외";

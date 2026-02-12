@@ -1,5 +1,6 @@
 import psycopg2
-from typedb.driver import TypeDB, SessionType, TransactionType
+from typedb.driver import TypeDB, TransactionType, Credentials, DriverOptions
+import traceback
 
 def verify_data():
     print("=== VERIFICATION REPORT ===\n")
@@ -25,36 +26,43 @@ def verify_data():
     # 2. Check TypeDB
     print("[2] TypeDB Knowledge Graph Data:")
     try:
-        driver = TypeDB.core_driver("127.0.0.1:1729")
-        with driver.session("riemann_db", SessionType.DATA) as session:
-            with session.transaction(TransactionType.READ) as tx:
+        with TypeDB.driver("http://localhost:1729", Credentials("admin", "password"), DriverOptions(False, None)) as driver:
+            with driver.transaction("riemann_db", TransactionType.READ) as tx:
                 
                 # Query: Find all people who authored documents
                 print("Querying: Match (Person)-[Authorship]->(Document)...")
+                # Syntax note: 'get' is optional/implicit in 3.0 match query if we access vars from map
                 query = """
                 match 
-                    $p isa person, has name $name;
+                    $p isa person, has full-name $name;
                     $d isa document, has title $title, has external-ref $ref;
                     (author: $p, authored-document: $d) isa authorship;
-                get $name, $title, $ref;
                 """
-                iterator = tx.query.get(query)
+                iterator = tx.query(query).resolve()
                 
                 count = 0
                 for result in iterator:
                     count += 1
-                    name = result.get("name").as_attribute().get_value()
-                    title = result.get("title").as_attribute().get_value()
-                    ref = result.get("ref").as_attribute().get_value()
-                    print(f"  - Relation Found: Author '{name}' wrote '{title}' (ExtRef: {ref})")
+                    # Accessing variables from the ConceptMap
+                    # Note: get("name") returns a Concept which we cast/inspect
+                    name_attr = result.get("name")
+                    title_attr = result.get("title")
+                    ref_attr = result.get("ref")
+                    
+                    if name_attr and title_attr and ref_attr:
+                        name = name_attr.as_attribute().get_value()
+                        title = title_attr.as_attribute().get_value()
+                        ref = ref_attr.as_attribute().get_value()
+                        print(f"  - Relation Found: Author '{name}' wrote '{title}' (ExtRef: {ref})")
+                    else:
+                        print("  - Result found but attributes missing?")
                 
                 if count == 0:
                     print("  No relations found.")
 
     except Exception as e:
         print(f"TypeDB Error: {e}")
-    finally:
-        driver.close()
+        traceback.print_exc()
 
     print("\n=== END REPORT ===")
 

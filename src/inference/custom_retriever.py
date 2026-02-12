@@ -2,7 +2,7 @@ from typing import Any, List
 from llama_index.core import QueryBundle
 from llama_index.core.retrievers import BaseRetriever
 from llama_index.core.schema import NodeWithScore, TextNode
-from typedb.driver import TypeDB, SessionType, TransactionType
+from typedb.driver import TypeDB, TransactionType, Credentials, DriverOptions
 import psycopg2
 
 class TypeDBHybridRetriever(BaseRetriever):
@@ -16,7 +16,7 @@ class TypeDBHybridRetriever(BaseRetriever):
     executes it, and fetches the content from Postgres.
     """
 
-    def __init__(self, typedb_host="127.0.0.1:1729", pg_host="localhost", db_name="riemann_db"):
+    def __init__(self, typedb_host="http://localhost:1729", pg_host="localhost", db_name="riemann_db"):
         self.typedb_host = typedb_host
         self.pg_host = pg_host
         self.db_name = db_name
@@ -42,12 +42,11 @@ class TypeDBHybridRetriever(BaseRetriever):
             print(f"   -> Detected Intent: Find documents by Author '{target_author}'")
             # Execute TypeQL
             try:
-                driver = TypeDB.core_driver(self.typedb_host)
-                with driver.session(self.db_name, SessionType.DATA) as session:
-                    with session.transaction(TransactionType.READ) as tx:
+                with TypeDB.driver(self.typedb_host, Credentials("admin", "password"), DriverOptions(False, None)) as driver:
+                    with driver.transaction(self.db_name, TransactionType.READ) as tx:
                         tql = f"""
                         match 
-                            $p isa person, has name "{target_author}";
+                            $p isa person, has full-name "{target_author}";
                             $d isa document, has external-ref $ref;
                             (author: $p, authored-document: $d) isa authorship;
                         get $ref;
@@ -57,7 +56,6 @@ class TypeDBHybridRetriever(BaseRetriever):
                         for result in iterator:
                             ref = result.get("ref").as_attribute().get_value()
                             ext_refs.append(ref)
-                driver.close()
             except Exception as e:
                 print(f"Error in TypeDB: {e}")
 

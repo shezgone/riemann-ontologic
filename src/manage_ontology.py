@@ -1,11 +1,12 @@
-from typedb.driver import TypeDB, SessionType, TransactionType
+from typedb.driver import TypeDB, TransactionType, Credentials, DriverOptions
 from typing import Text
+import traceback
 
-def load_schema(db_name: str, server_addr: str = "127.0.0.1:1729"):
+def load_schema(db_name: str, server_addr: str = "http://localhost:1729"):
     # 1. Connect to TypeDB Server
     print(f"Connecting to TypeDB at {server_addr}...")
-    with TypeDB.core_driver(server_addr) as driver:
-        # 2. Create Database if strictly needed (some drivers auto-create, but good to be explicit)
+    with TypeDB.driver(server_addr, Credentials("admin", "password"), DriverOptions(False, None)) as driver:
+        # 2. Create Database
         if driver.databases.contains(db_name):
             print(f"Database '{db_name}' already exists. Recreating...")
             driver.databases.get(db_name).delete()
@@ -17,12 +18,14 @@ def load_schema(db_name: str, server_addr: str = "127.0.0.1:1729"):
         with open("src/schema/base_ontology.tql", "r") as f:
             schema_tql = f.read()
 
-        # 4. Define Schema in a Session
+        # Debugging with manual string
+        # schema_tql = "define person sub entity;"
+
+        # 4. Define Schema
         print("Defining schema...")
-        with driver.session(db_name, SessionType.SCHEMA) as session:
-            with session.transaction(TransactionType.WRITE) as tx:
-                tx.query.define(schema_tql)
-                tx.commit()
+        with driver.transaction(db_name, TransactionType.SCHEMA) as tx:
+            tx.query(schema_tql).resolve()
+            tx.commit()
         
         print("Schema defined successfully!")
 
@@ -31,7 +34,7 @@ def main():
         load_schema(db_name="riemann_db")
     except Exception as e:
         print(f"Error: {e}")
-        print("Make sure TypeDB is running on port 1729 (check docker-compose).")
+        traceback.print_exc()
 
 if __name__ == "__main__":
     main()
